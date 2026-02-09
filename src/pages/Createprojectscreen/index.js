@@ -95,6 +95,7 @@ const CreateProjectScreen = () => {
           value={P_title}
           onChangeText={setTitle}
           maxLength={40}
+          placeholderTextColor="#C0C0C0"
         />
 
         <Text style={styles.text2}>Description</Text>
@@ -104,56 +105,79 @@ const CreateProjectScreen = () => {
           value={description}
           onChangeText={setDescription}
           maxLength={200}
+          placeholderTextColor="#C0C0C0"
           multiline
         />
 
         <Text style={styles.text2}>Project Start</Text>
         <TouchableOpacity
           style={styles.inputBox}
-          onPress={() => setOpenStartDatePicker(true)}>
-          <Text style={styles.dateText}>
-            {projectStart ? projectStart : 'Select start date'}
+          onPress={() => setOpenStartDatePicker(true)}
+        >
+          <Text
+            style={[
+              styles.dateText,
+              { color: projectStart ? '#000000' : '#808080' } // black if selected, gray if placeholder
+            ]}
+          >
+            {projectStart || 'Select start date'}
+            {/* show placeholder if empty */}
           </Text>
         </TouchableOpacity>
 
-        <DatePicker
-          modal
-          open={openStartDatePicker}
-          date={selectedStartDate}
-          mode="date"
-          onConfirm={date => {
-            setOpenStartDatePicker(false);
-            setSelectedStartDate(date);
-            setProjectStart(date.toLocaleDateString('id-ID')); // Mengubah format sesuai kebutuhan
-          }}
-          onCancel={() => {
-            setOpenStartDatePicker(false);
-          }}
-        />
+
+
+
+          <DatePicker
+            modal
+            open={openStartDatePicker}
+            date={selectedStartDate || new Date()} // default to today if null
+            mode="date"
+            onConfirm={date => {
+              setOpenStartDatePicker(false);
+              setSelectedStartDate(date); // store Date object
+              setProjectStart(
+                date.toLocaleDateString('id-ID') // formatted string for display
+              );
+            }}
+            onCancel={() => {
+              setOpenStartDatePicker(false);
+            }}
+          />
+
 
         <Text style={styles.text2}>Project End</Text>
         <TouchableOpacity
           style={styles.inputBox}
-          onPress={() => setOpenEndDatePicker(true)}>
-          <Text style={styles.dateText}>
-            {projectEnd ? projectEnd : 'Select end date'}
+          onPress={() => setOpenStartDatePicker(true)}
+        >
+          <Text
+            style={[
+              styles.dateText,
+              { color: projectEnd ? '#000000' : '#808080' } // black if selected, gray if placeholder
+            ]}
+          >
+            {projectEnd || 'Select end date'}
+            {/* show placeholder if empty */}
           </Text>
         </TouchableOpacity>
 
         <DatePicker
-          modal
-          open={openEndDatePicker}
-          date={selectedEndDate}
-          mode="date"
-          onConfirm={date => {
-            setOpenEndDatePicker(false);
-            setSelectedEndDate(date);
-            setProjectEnd(date.toLocaleDateString('id-ID')); // Mengubah format sesuai kebutuhan
-          }}
-          onCancel={() => {
-            setOpenEndDatePicker(false);
-          }}
-        />
+            modal
+            open={openStartDatePicker}
+            date={selectedStartDate || new Date()} // default to today if null
+            mode="date"
+            onConfirm={date => {
+              setOpenEndDatePicker(false);
+              setSelectedEndDate(date); // store Date object
+              setProjectEnd(
+                date.toLocaleDateString('id-ID') // formatted string for display
+              );
+            }}
+            onCancel={() => {
+              setOpenEndDatePicker(false);
+            }}
+          />
       </ScrollView>
 
       <TouchableOpacity style={styles.createButton} onPress={handleCreatePress}>
@@ -173,6 +197,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 10,
     justifyContent: 'center',
+    color: '#000000',
   },
   text1: {
     fontSize: 16,
@@ -205,6 +230,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 10,
     textAlignVertical: 'top',
+    color: '#000000',
   },
   createButton: {
     marginHorizontal: 16,

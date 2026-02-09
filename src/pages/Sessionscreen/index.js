@@ -111,6 +111,7 @@ const Sessionscreen = () => {
           value={S_title}
           onChangeText={setTitle}
           maxLength={40}
+          placeholderTextColor="#C0C0C0"
         />
 
         <Text style={styles.text1}>Description</Text>
@@ -120,6 +121,7 @@ const Sessionscreen = () => {
           value={description}
           onChangeText={setDescription}
           maxLength={200}
+          placeholderTextColor="#C0C0C0"
           multiline
         />
 
@@ -130,6 +132,7 @@ const Sessionscreen = () => {
           value={wheater}
           onChangeText={setWheater}
           maxLength={40}
+          placeholderTextColor="#C0C0C0"
         />
 
         <Text style={styles.text1}>Material Type</Text>
@@ -139,6 +142,7 @@ const Sessionscreen = () => {
           value={materialType}
           onChangeText={setMaterialType}
           maxLength={40}
+          placeholderTextColor="#C0C0C0"
         />
 
         <Text style={styles.text1}>Layer</Text>
@@ -148,31 +152,41 @@ const Sessionscreen = () => {
           value={layer}
           onChangeText={setLayer}
           maxLength={25}
+          placeholderTextColor="#C0C0C0"
         />
 
         <Text style={styles.text1}>Session Start</Text>
         <TouchableOpacity
-          style={styles.input}
-          onPress={() => setOpenStartDatePicker(true)}>
-          <Text style={styles.dateText}>
-            {projectStart ? projectStart : 'Select start date'}
-          </Text>
-        </TouchableOpacity>
+                  style={styles.input}
+                  onPress={() => setOpenStartDatePicker(true)}
+                >
+                  <Text
+                    style={[
+                      styles.dateText,
+                      { color: projectStart ? '#000000' : '#808080' } // black if selected, gray if placeholder
+                    ]}
+                  >
+                    {projectStart || 'Select start date'}
+                    {/* show placeholder if empty */}
+                  </Text>
+                </TouchableOpacity>
 
         <DatePicker
-          modal
-          open={openStartDatePicker}
-          date={selectedStartDate}
-          mode="date"
-          onConfirm={date => {
-            setOpenStartDatePicker(false);
-            setSelectedStartDate(date);
-            setProjectStart(date.toLocaleDateString('id-ID')); // Mengubah format sesuai kebutuhan
-          }}
-          onCancel={() => {
-            setOpenStartDatePicker(false);
-          }}
-        />
+                    modal
+                    open={openStartDatePicker}
+                    date={selectedStartDate || new Date()} // default to today if null
+                    mode="date"
+                    onConfirm={date => {
+                      setOpenStartDatePicker(false);
+                      setSelectedStartDate(date); // store Date object
+                      setProjectStart(
+                        date.toLocaleDateString('id-ID') // formatted string for display
+                      );
+                    }}
+                    onCancel={() => {
+                      setOpenStartDatePicker(false);
+                    }}
+                  />
       </ScrollView>
 
       <TouchableOpacity style={styles.button} onPress={handleCreatePress}>
@@ -231,6 +245,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 10,
     textAlignVertical: 'top',
+    color: '#000000'
   },
 });
 

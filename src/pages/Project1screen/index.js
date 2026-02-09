@@ -262,6 +262,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginBottom: 5,
     textAlign: 'justify',
+    color: '#000000',
   },
   dateContainer: {
     flexDirection: 'row',

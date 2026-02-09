@@ -204,6 +204,7 @@ const Createlocationscreen = () => {
             value={L_title}
             onChangeText={setLtitle}
             maxLength={40}
+            placeholderTextColor="#C0C0C0"
           />
         </View>
         <View>
@@ -214,6 +215,7 @@ const Createlocationscreen = () => {
             value={description}
             onChangeText={setDescription}
             maxLength={200}
+            placeholderTextColor="#C0C0C0"
             multiline
           />
         </View>
@@ -224,6 +226,7 @@ const Createlocationscreen = () => {
             placeholder="Enter Soil"
             value={soil}
             onChangeText={setSoil}
+            placeholderTextColor="#C0C0C0"
             maxLength={25}
           />
         </View>
@@ -297,6 +300,7 @@ const Createlocationscreen = () => {
           value={air}
           onChangeText={setAir}
           maxLength={25}
+          placeholderTextColor="#C0C0C0"
         />
 
         <Text style={styles.text1}>Surface Temperature</Text>
@@ -306,6 +310,7 @@ const Createlocationscreen = () => {
           value={surface}
           onChangeText={setSurface}
           maxLength={25}
+          placeholderTextColor="#C0C0C0"
         />
 
         <Text style={styles.text1}>Material Temperature</Text>
@@ -315,6 +320,7 @@ const Createlocationscreen = () => {
           value={material}
           onChangeText={setMaterial}
           maxLength={25}
+          placeholderTextColor="#C0C0C0"
         />
       </ScrollView>
       <TouchableOpacity style={styles.createButton} onPress={handleCreatePress}>
@@ -350,6 +356,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 10,
     justifyContent: 'center',
+    color: '#000000',
   },
   text1: {
     fontSize: 16,
@@ -388,6 +395,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 10,
     textAlignVertical: 'top',
+    color: '#000000',
   },
   createButton: {
     height: 45,

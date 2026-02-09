@@ -426,10 +426,13 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         width: '40%',
         paddingHorizontal: 10,
+        color: '#000000', // <-- added to make text black
     },
     picker: {
         width: 150,
         left: -10,
+        color: '#000000',
+        
     },
     pickerContainer: {
         height: 40,
@@ -438,7 +441,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         width: '40%',
         paddingHorizontal: 10,
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
     line: {
         borderBottomWidth: 1,
