@@ -238,6 +238,25 @@ class Homescreen extends Component {
         }
     };
 
+    handleStreamClick = async () => {
+    const { permission } = this.state;
+
+    try {
+        if (permission == 'true') {
+            this.props.navigation.navigate('Streamscreen');
+        } else if (permission == 'false') {
+            if (this.state.apiLevelInfo == '1') {
+                Alert.alert('Alert', 'Make Sure Bluetooth Permission is Accepted.');
+            } else {
+                Alert.alert('Alert', 'Make Sure Bluetooth and Location Permissions Are Accepted.');
+            }
+        }
+    } catch (error) {
+        console.error("Error checking Bluetooth state:", error);
+    }
+};
+
+
     render() {
         const { projects, sessions, locations, currentDate } = this.state;
         return (
@@ -272,11 +291,23 @@ class Homescreen extends Component {
                         <Image source={database} style={styles.iconproj} />
                         <Text style={styles.text4}>Project</Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity style={styles.box1} onPress={this.handleDeviceClick}>
                         <Image source={bluetooth} style={styles.iconblue} />
                         <Text style={styles.text3}>Device</Text>
                     </TouchableOpacity>
                 </View>
+
+                <View style={styles.row}>
+                    <TouchableOpacity style={styles.box2} onPress={this.handleStreamClick}>
+                        <Image source={database} style={styles.iconproj} />
+                        <Text style={styles.text4}>Stream</Text>
+                    </TouchableOpacity>
+
+                    <View style={{ width: 170 }} /> 
+                </View>
+
+
             </View>
         );
     }
@@ -391,6 +422,14 @@ const styles = StyleSheet.create({
         bottom: 20,
         fontWeight: 'bold',
     },
+    box3: {
+        backgroundColor: '#4CAF50',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+},
+
 });
 
 export default function (props) {

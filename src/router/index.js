@@ -16,6 +16,7 @@ import {
   Sessioninfoscreen,
   Locationinfoscreen,
   Createlocationscreen,
+  Streamscreen
 } from '../pages';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {BottomNavigator, HeaderModel} from '../components/molecules';
@@ -63,6 +64,7 @@ const SummaryStack = () => {
         component={Summaryscreen}
         options={{headerShown: false}}
       />
+
     </Stack.Navigator>
   );
 };
@@ -155,6 +157,12 @@ const Router = () => {
         component={Summaryscreen}
         options={{headerShown: false}}
       />
+
+            <Stack.Screen
+        name="Streamscreen"
+        component={Streamscreen}
+      />
+
     </Stack.Navigator>
   );
 };

@@ -4,6 +4,8 @@ import { arrowback } from '../../assets/icon';
 import { View, StyleSheet, TextInput, TouchableOpacity, Text, Image, ScrollView, SafeAreaView, Alert, ActivityIndicator, BackHandler } from 'react-native';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setConnectedDevice, clearConnectedDevice } from '../../utils/bluetoothManager';
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -214,6 +216,7 @@ class Connectedscreen extends Component {
           let isConnected = await device.isConnected();
           if (!isConnected) {
             await device.connect();
+            setConnectedDevice(device); 
             this.setState((prevState) => ({
               connectedDevice: device,
               devices: prevState.devices.filter((d) => d.id !== device.id),
@@ -281,6 +284,8 @@ class Connectedscreen extends Component {
 
       // Remove the connected device from AsyncStorage
       await AsyncStorage.removeItem('device_connect');
+      clearConnectedDevice();
+
       console.log('Device removed from storage:', connectedDevice.name);
   };
 
@@ -294,6 +299,7 @@ class Connectedscreen extends Component {
     try {
       console.log('disconnect from :', connectedDevice);
       await connectedDevice.disconnect();
+      clearConnectedDevice();
       
       // Add the disconnected device back to the list of devices
       this.setState((prevState) => ({

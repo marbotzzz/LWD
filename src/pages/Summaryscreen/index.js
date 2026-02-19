@@ -30,12 +30,12 @@ const SummaryScreen = () => {
     const [settings, setSettings] = useState(defaultSettings);
     const [isFinish, setisFinish] = useState(false);
 
-    const forceValues = ["10", "20", "30", "40"];
-    const pressValues = ["10", "20", "30", "40"];
-    const pulseValues= ["10", "20", "30", "40"];
+    const forceValues = ["0", "10", "20", "30", "40"];
+    const pressValues = ["0", "10", "20", "30", "40"];
+    const pulseValues= ["0", "10", "20", "30", "40"];
     const poissonRatioValues = ["0", "0.30", "0.35", "0.40"];
     const diameterValues = ["0", "150", "200", "300"];
-    const roffsetValues = ["10", "20", "30", "40"];
+    const roffsetValues = ["0", "10", "20", "30", "40"];
 
     // Load settings from AsyncStorage when component mounts
     const loadSettingsFromStorage = async () => {

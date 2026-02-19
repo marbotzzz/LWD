@@ -13,7 +13,7 @@ import Sessionscreen from "./Sessionscreen";
 import Sessioninfoscreen from "./Sessioninfoscreen";
 import Locationinfoscreen from "./Locationinfoscreen";
 import Createlocationscreen from "./Createlocationscreen";
-
+import Streamscreen from "./Streamscreen";
 
 
 export{
@@ -31,5 +31,6 @@ export{
     Sessionscreen,
     Sessioninfoscreen,
     Locationinfoscreen,
-    Createlocationscreen
-}
+    Createlocationscreen,
+    Streamscreen,
+};
