@@ -8,6 +8,10 @@ import {
   Alert,
   ScrollView
 } from 'react-native';
+import Svg, { Path,
+              Line,
+              Text as SvgText
+ } from 'react-native-svg';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
@@ -16,11 +20,18 @@ class Streamscreen extends Component {
 
   constructor(props) {
     super(props);
+    // Graph scroll reference
+    this.graphScrollRef = React.createRef();
     this.state = {
       connectedDevice: null,
       isStreaming: false,
       filePath: null,
       lastData: '',
+      graphData: [],
+
+      expectedSamples: 0,
+      receivedSamples: 0,
+      isReceivingFrame: false,
     };
   }
 
@@ -74,15 +85,9 @@ class Streamscreen extends Component {
     }
 
     try {
-      const timestamp = new Date().getTime();
-      const path = `${RNFS.DownloadDirectoryPath}/LWD_${timestamp}.csv`;
-
-      // Create CSV with header
-      await RNFS.writeFile(path, "pulse,press\n", "utf8");
 
       this.setState({
         isStreaming: true,
-        filePath: path
       });
 
       await connectedDevice.write("START\n");
@@ -111,34 +116,213 @@ class Streamscreen extends Component {
 
   // 🔹 Handle Incoming Data
   handleIncomingData = async (data) => {
+    const cleanData = data.trim();
+    if (cleanData.startsWith("FRAME_START")) {
+
+      const parts = cleanData.split(",");
+
+      const count = parseInt(parts[1]);
+
+      this.setState({
+        expectedSamples: count,
+        receivedSamples: 0,
+        isReceivingFrame: true,
+        graphData: [],
+        streamBuffer: [],
+      });
+
+      console.log("Frame started:", count);
+
+      return;
+    }
 
     if (!this.state.isStreaming) return;
 
-    const cleanData = data.trim();
+    // If ESP sends FRAME_END
+    if (cleanData === "FRAME_END") {
 
-    // If ESP sends END
-    if (cleanData === "END") {
-      this.setState({ isStreaming: false });
-      Alert.alert("Streaming Finished",
-        "File saved:\n" + this.state.filePath
+      this.setState({
+        isStreaming: false,
+        isReceivingFrame: false,
+      });
+
+      const {
+        expectedSamples,
+        receivedSamples
+      } = this.state;
+
+      // Validation
+      if (receivedSamples !== expectedSamples) {
+
+        Alert.alert(
+          "Frame Error",
+          `Expected ${expectedSamples} samples\nReceived ${receivedSamples}`
+        );
+
+        return;
+      }
+
+      // Save dialog
+      Alert.alert(
+        "Streaming Finished",
+        `Received ${receivedSamples} samples\nSave measurement data?`,
+        [
+          {
+            text: "No",
+            style: "cancel"
+          },
+          {
+            text: "Yes",
+            onPress: this.saveCSV
+          }
+        ]
       );
+
       return;
     }
 
     try {
       // Save to CSV
-      await RNFS.appendFile(
-        this.state.filePath,
-        cleanData + "\n",
+
+      const parts = cleanData.split(",");
+
+      if (parts.length >= 2) {
+
+        const signal = parseFloat(parts[1]);
+
+        if (!isNaN(signal)) {
+
+          this.setState((prevState) => {
+
+            const updatedGraph = [
+              ...prevState.graphData,
+              signal
+            ];
+
+            return {
+
+              lastData: cleanData,
+
+              graphData: updatedGraph,
+
+              streamBuffer: [
+                ...prevState.streamBuffer,
+                cleanData
+              ],
+
+              receivedSamples:
+                prevState.receivedSamples + 1
+            };
+          });
+
+          if (this.state.isStreaming) {
+
+            setTimeout(() => {
+
+              this.graphScrollRef.current?.scrollToEnd({
+                animated: true
+              });
+
+            }, 10);
+          }
+        }
+      }
+
+    } catch (error) {
+      console.log("Data error:", error);
+    }
+  };
+  saveCSV = async () => {
+
+    try {
+
+      const timestamp = new Date().getTime();
+
+      const path =
+        `${RNFS.DownloadDirectoryPath}/LWD_${timestamp}.csv`;
+
+      const {
+        streamBuffer,
+        receivedSamples
+      } = this.state;
+
+      // HEADER
+      let csvContent =
+        "time_ms,signal\n";
+
+      // DATA
+      csvContent +=
+        streamBuffer.join("\n");
+
+      // SAVE FILE
+      await RNFS.writeFile(
+        path,
+        csvContent,
         "utf8"
       );
 
-      this.setState({ lastData: cleanData });
+      Alert.alert(
+        "CSV Saved",
+        `Saved ${receivedSamples} samples\n\n${path}`
+      );
 
     } catch (error) {
-      console.log("Append error:", error);
+
+      console.log(
+        "Save CSV error:",
+        error
+      );
+
+      Alert.alert(
+        "Save Error",
+        "Failed to save CSV"
+      );
     }
   };
+  
+  generatePath = () => {
+
+    const { graphData } = this.state;
+
+    if (graphData.length < 2) {
+      return '';
+    }
+
+    const width = Math.max(
+      graphData.length * 5,
+      300
+    );
+
+    const height = 200;
+
+    const maxValue = 1.5;
+    const minValue = -1.5;
+
+    const stepX = 5;
+
+    let path = '';
+
+    graphData.forEach((value, index) => {
+
+      const x = index * stepX;
+
+      const y =
+        height -
+        (
+          (value - minValue) /
+          (maxValue - minValue)
+        ) * height;
+
+      if (index === 0) {
+        path += `M ${x} ${y}`;
+      } else {
+        path += ` L ${x} ${y}`;
+      }
+    });
+
+    return path;
+  };
+
 
   render() {
 
@@ -164,6 +348,87 @@ class Streamscreen extends Component {
           <Text style={styles.dataText}>
             {lastData || "Waiting data..."}
           </Text>
+        </View>
+
+        {/* GRAPH */}
+       <View style={styles.graphContainer}>
+
+          <ScrollView
+            horizontal
+            ref={this.graphScrollRef}
+          >
+
+            <Svg
+              height="230"
+              width={Math.max(
+                this.state.graphData.length * 5,
+                300
+              )}
+            >
+
+              {/* Center line */}
+              <Line
+                x1="0"
+                y1="100"
+                x2={Math.max(
+                  this.state.graphData.length * 5,
+                  300
+                )}
+                y2="100"
+                stroke="#555"
+                strokeWidth="1"
+              />
+
+              {/* Left axis */}
+              <Line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="200"
+                stroke="#555"
+                strokeWidth="1"
+              />
+
+              {/* Labels */}
+              <SvgText
+                x="5"
+                y="15"
+                fill="white"
+                fontSize="10"
+              >
+                1.5
+              </SvgText>
+
+              <SvgText
+                x="5"
+                y="105"
+                fill="white"
+                fontSize="10"
+              >
+                0
+              </SvgText>
+
+              <SvgText
+                x="5"
+                y="195"
+                fill="white"
+                fontSize="10"
+              >
+                -1.5
+              </SvgText>
+
+              {/* Waveform */}
+              <Path
+                d={this.generatePath()}
+                stroke="#00FF88"
+                strokeWidth="2"
+                fill="none"
+              />
+
+            </Svg>
+
+          </ScrollView>
+
         </View>
 
         {/* START BUTTON */}
@@ -251,6 +516,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
     fontSize: 16
-  }
+  },
+
+    graphContainer: {
+    height: 250,
+    backgroundColor: '#111',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 30,
+  },
 
 });
