@@ -215,7 +215,10 @@ class Connectedscreen extends Component {
     
           let isConnected = await device.isConnected();
           if (!isConnected) {
-            await device.connect();
+            await device.connect({
+              DELIMITER: "",
+              READ_SIZE: 8192
+            });
             setConnectedDevice(device); 
             this.setState((prevState) => ({
               connectedDevice: device,

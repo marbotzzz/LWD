@@ -17,6 +17,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 
 class Streamscreen extends Component {
+  pendingGraphData = [];
+  pendingStreamBuffer = [];
+  pendingReceivedSamples = 0;
 
   constructor(props) {
     super(props);
@@ -63,8 +66,19 @@ class Streamscreen extends Component {
         if (isConnected) {
           this.setState({ connectedDevice: device });
 
+
           // 🔹 Listen for incoming data
           this.dataListener = device.onDataReceived((event) => {
+  console.log("RX:", JSON.stringify(event.data));
+            console.log(
+    "RX length:",
+    event.data.length
+  );
+
+  console.log(
+    "RX preview:",
+    event.data.substring(0, 100));
+
             this.handleIncomingData(event.data);
           });
         }
@@ -116,7 +130,23 @@ class Streamscreen extends Component {
 
   // 🔹 Handle Incoming Data
   handleIncomingData = async (data) => {
-    const cleanData = data.trim();
+
+    this.rxBuffer = (this.rxBuffer || "") + data;
+
+    const lines = this.rxBuffer.split("\n");
+
+    this.rxBuffer = lines.pop();
+
+    for (const line of lines) {
+
+      const cleanData = line.trim();
+
+      console.log(
+        "LINE:",
+        JSON.stringify(cleanData)
+      );
+
+
     if (cleanData.startsWith("FRAME_START")) {
 
       const parts = cleanData.split(",");
@@ -131,7 +161,18 @@ class Streamscreen extends Component {
         streamBuffer: [],
       });
 
+      this.pendingStreamBuffer = [];
+      this.pendingGraphData = [];
+      this.pendingReceivedSamples = 0;
+
       console.log("Frame started:", count);
+
+      this.transferStartTime = Date.now();
+
+      console.log(
+        "TRANSFER START:",
+        this.transferStartTime
+      );
 
       return;
     }
@@ -141,15 +182,47 @@ class Streamscreen extends Component {
     // If ESP sends FRAME_END
     if (cleanData === "FRAME_END") {
 
+      const transferEndTime = Date.now();
+
+        console.log(
+          "TRANSFER END:",
+          transferEndTime
+        );
+
+        console.log(
+          "TRANSFER DURATION:",
+          transferEndTime - this.transferStartTime,
+          "ms"
+        );
+
+        this.setState({
+          isStreaming: false,
+          isReceivingFrame: false,
+          streamBuffer: [...this.pendingStreamBuffer],
+          receivedSamples: this.pendingReceivedSamples
+        });
+
       this.setState({
         isStreaming: false,
         isReceivingFrame: false,
       });
 
-      const {
-        expectedSamples,
-        receivedSamples
-      } = this.state;
+      this.setState({
+  graphData: [...this.pendingGraphData],
+  streamBuffer: [...this.pendingStreamBuffer],
+  receivedSamples: this.pendingReceivedSamples
+});
+
+      const { expectedSamples } = this.state;
+
+      const receivedSamples =
+      this.pendingReceivedSamples;
+
+      this.setState({
+        streamBuffer: [...this.pendingStreamBuffer]
+      });
+
+      
 
       // Validation
       if (receivedSamples !== expectedSamples) {
@@ -186,52 +259,50 @@ class Streamscreen extends Component {
 
       const parts = cleanData.split(",");
 
-      if (parts.length >= 2) {
+        // ignore system messages
+        if (cleanData.startsWith("FRAME_START") || cleanData === "FRAME_END") {
+          return;
+        }
 
-        const signal = parseFloat(parts[1]);
+        if (parts.length >= 3) {
 
-        if (!isNaN(signal)) {
+          const timestamp = Number(parts[0]);
+          const ch1 = Number(parts[1]);
+          const ch2 = Number(parts[2]);
 
-          this.setState((prevState) => {
+          if (
+            Number.isFinite(ch1) &&
+            Number.isFinite(ch2)
+          ) {
 
-            const updatedGraph = [
-              ...prevState.graphData,
-              signal
-            ];
-
-            return {
-
-              lastData: cleanData,
-
-              graphData: updatedGraph,
-
-              streamBuffer: [
-                ...prevState.streamBuffer,
-                cleanData
-              ],
-
-              receivedSamples:
-                prevState.receivedSamples + 1
+            const parsedData = {
+              timestamp: Number.isFinite(timestamp) ? timestamp : null,
+              ch1,
+              ch2
             };
+
+            // console.log("Parsed:", parsedData);
+
+          }
+
+          this.pendingGraphData.push({
+            t: timestamp,
+            ch1,
+            ch2
           });
 
-          if (this.state.isStreaming) {
+          this.pendingStreamBuffer.push(
+            `${timestamp},${ch1},${ch2}`
+          );
 
-            setTimeout(() => {
-
-              this.graphScrollRef.current?.scrollToEnd({
-                animated: true
-              });
-
-            }, 10);
-          }
-        }
+          this.pendingReceivedSamples++;
+        
       }
 
     } catch (error) {
       console.log("Data error:", error);
     }
-  };
+  }};
   saveCSV = async () => {
 
     try {
@@ -280,45 +351,41 @@ class Streamscreen extends Component {
     }
   };
   
-  generatePath = () => {
+  generatePath = (channel = "ch1") => {
+
+    const t0 = Date.now();
 
     const { graphData } = this.state;
 
-    if (graphData.length < 2) {
-      return '';
-    }
+    const values = graphData.map(p => p[channel]);
 
-    const width = Math.max(
-      graphData.length * 5,
-      300
-    );
+    if (values.length < 2) return '';
 
     const height = 200;
-
-    const maxValue = 1.5;
     const minValue = -1.5;
-
-    const stepX = 5;
+    const maxValue = 1.5;
+    const stepX = 0.5;
 
     let path = '';
 
-    graphData.forEach((value, index) => {
+    values.forEach((value, index) => {
 
       const x = index * stepX;
 
       const y =
         height -
-        (
-          (value - minValue) /
-          (maxValue - minValue)
-        ) * height;
+        ((value - minValue) / (maxValue - minValue)) * height;
 
-      if (index === 0) {
-        path += `M ${x} ${y}`;
-      } else {
-        path += ` L ${x} ${y}`;
-      }
+      path += index === 0
+        ? `M ${x} ${y}`
+        : ` L ${x} ${y}`;
     });
+
+    console.log(
+      `generatePath ${channel}:`,
+      Date.now() - t0,
+      "ms"
+    );
 
     return path;
   };
@@ -327,7 +394,9 @@ class Streamscreen extends Component {
   render() {
 
     const { connectedDevice, isStreaming, lastData } = this.state;
-
+    // console.log("graphData length:", this.state.graphData.length);
+    // console.log("sample:", this.state.graphData[0]);
+    
     return (
       <SafeAreaView style={styles.container}>
 
@@ -418,9 +487,18 @@ class Streamscreen extends Component {
               </SvgText>
 
               {/* Waveform */}
+              {/* CH1 */}
               <Path
-                d={this.generatePath()}
+                d={this.generatePath("ch1")}
                 stroke="#00FF88"
+                strokeWidth="2"
+                fill="none"
+              />
+
+              {/* CH2 */}
+              <Path
+                d={this.generatePath("ch2")}
+                stroke="#FF4444"
                 strokeWidth="2"
                 fill="none"
               />
@@ -449,7 +527,10 @@ class Streamscreen extends Component {
         </TouchableOpacity>
 
       </SafeAreaView>
+
+      
     );
+    
   }
 }
 
